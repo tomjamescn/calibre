@@ -260,6 +260,8 @@ class Restore(Thread):
                 force_id=book['id'])
         if book['mi'].uuid:
             db.set_uuid(book['id'], book['mi'].uuid, commit=False, notify=False)
+        
+        # print('### restore_book', book['path'])
         db.conn.execute('UPDATE books SET path=?,last_modified=? WHERE id=?', (book['path'],
             utcfromtimestamp(book['timestamp']), book['id']))
 

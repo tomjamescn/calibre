@@ -685,6 +685,8 @@ class LibraryDatabase2(LibraryDatabase, SchemaUpgrade, CustomColumns):
                             path=tpath, notify=False, copy_function=copy_function)
                     except NoSuchFormat:
                         continue
+            
+            # print('### set_path conn', path)
             self.conn.execute('UPDATE books SET path=? WHERE id=?', (path, id))
             self.dirtied([id], commit=False)
             self.conn.commit()

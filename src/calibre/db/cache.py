@@ -1494,7 +1494,9 @@ class Cache:
                 author = self._field_for('authors', book_id, default_value=(_('Unknown'),))[0]
             except IndexError:
                 author = _('Unknown')
-            self.backend.update_path(book_id, title, author, self.fields['path'], self.fields['formats'])
+            # for field_name, field in self.fields.items():
+                # print('### update_path fields', field_name, field.for_book(book_id, default_value='default=xxx'))
+            self.backend.update_path(book_id, title, author, self.fields['path'], self.fields['formats'], self.fields['last_modified'])
             self.format_metadata_cache.pop(book_id, None)
             if mark_as_dirtied:
                 self._mark_as_dirty(book_ids)

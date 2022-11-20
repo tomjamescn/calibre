@@ -130,6 +130,7 @@ class PathTable(OneToOneTable):
 
     def set_path(self, book_id, path, db):
         self.book_col_map[book_id] = path
+        # print('### set_path', path)
         db.execute('UPDATE books SET path=? WHERE id=?',
                         (path, book_id))
 

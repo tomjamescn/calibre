@@ -17,6 +17,7 @@ import time
 import uuid
 from contextlib import closing, suppress
 from functools import partial
+from datetime import datetime
 
 from calibre import as_unicode, force_unicode, isbytestring, prints
 from calibre.constants import (
@@ -1337,8 +1338,8 @@ class DB:
         '''
         book_id = ' (%d)' % book_id
         l = self.PATH_LIMIT - (len(book_id) // 2) - 2
-        author = ascii_filename(author)[:l]
-        title  = ascii_filename(title.lstrip())[:l].rstrip()
+        author = author[:l]
+        title  = title.lstrip()[:l].rstrip()
         if not title:
             title = 'Unknown'[:l]
         try:
@@ -1347,7 +1348,7 @@ class DB:
         except IndexError:
             author = ''
         if not author:
-            author = ascii_filename(_('Unknown'))
+            author = _('Unknown').decode('ascii', 'replace')
         if author.upper() in WINDOWS_RESERVED_NAMES:
             author += 'w'
         return f'{author}/{title}{book_id}'
@@ -1356,6 +1357,7 @@ class DB:
         '''
         Construct the file name for this book based on its metadata.
         '''
+        # print('### 调用DEBUG', title, author, extlen)
         extlen = max(extlen, 14)  # 14 accounts for ORIGINAL_EPUB
         # The PATH_LIMIT on windows already takes into account the doubling
         # (it is used to enforce the total path length limit, individual path
@@ -1364,15 +1366,15 @@ class DB:
         l = (self.PATH_LIMIT - (extlen // 2) - 2) if iswindows else ((self.PATH_LIMIT - extlen - 2) // 2)
         if l < 5:
             raise ValueError('Extension length too long: %d' % extlen)
-        author = ascii_filename(author)[:l]
-        title  = ascii_filename(title.lstrip())[:l].rstrip()
+        author = author[:l]
+        title  = title.lstrip()[:l].rstrip()
         if not title:
             title = 'Unknown'[:l]
         name   = title + ' - ' + author
         while name.endswith('.'):
             name = name[:-1]
         if not name:
-            name = ascii_filename(_('Unknown'))
+            name = _('Unknown').decode('ascii', 'replace')
         return name
 
     # Database layer API {{{
@@ -1697,6 +1699,7 @@ class DB:
         fname = self.construct_file_name(book_id, title, author, len(fmt))
         path = os.path.join(self.library_path, path)
         dest = os.path.join(path, fname + fmt)
+        # print('### add_format:', path, fname, dest)
         if not os.path.exists(path):
             os.makedirs(path)
         size = 0
@@ -1730,8 +1733,11 @@ class DB:
 
         return size, fname
 
-    def update_path(self, book_id, title, author, path_field, formats_field):
-        path = self.construct_path_name(book_id, title, author)
+    def update_path(self, book_id, title, author, path_field, formats_field, last_modified_field):
+        # print('### update_path', book_id, title, author, path_field, formats_field)
+        # print('### timestamp_field:', timestamp_field.for_book(book_id, default_value=datetime.today().strftime('%Y-%m-%d')))
+        path_prefix = str(last_modified_field.for_book(book_id, default_value=datetime.today().strftime('%Y-%m-%d')))[:10].replace('-', '/')
+        path = path_prefix + '/' + self.construct_path_name(book_id, title, author)
         current_path = path_field.for_book(book_id, default_value='')
         formats = formats_field.for_book(book_id, default_value=())
         try:
@@ -2191,6 +2197,7 @@ class DB:
         progress(_('Completed'), total, total)
 
     def restore_book(self, book_id, path, formats):
+        # print('### restore_book', path)
         self.execute('UPDATE books SET path=? WHERE id=?', (path.replace(os.sep, '/'), book_id))
         vals = [(book_id, fmt, size, name) for fmt, size, name in formats]
         self.executemany('INSERT INTO data (book,format,uncompressed_size,name) VALUES (?,?,?,?)', vals)
