@@ -856,7 +856,8 @@ class Device(DeviceConfig, DevicePlugin):
         Callback to allow individual device drivers to override the path sanitization
         used by :meth:`create_upload_path`.
         '''
-        return sanitize(path)
+        # return sanitize(path)
+        return path.replace(':', '_').replace('/', '_')
 
     def filename_callback(self, default, mi):
         '''
